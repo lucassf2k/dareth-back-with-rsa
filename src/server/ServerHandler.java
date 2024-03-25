@@ -39,7 +39,7 @@ public class ServerHandler implements Runnable {
     private int response = 1;
     private CheckingAccount currentCheckingAccount = null;
     private String authenticationKey;
-    public static SDCService.RSAKeys serverRsaKeys;
+    private SDCService.RSAKeys serverRsaKeys;
     private final Protocol SDCStub;
 
     public ServerHandler(Socket client) {
@@ -117,11 +117,7 @@ public class ServerHandler implements Runnable {
         try {
             final var userExists = bank.getCheckingAccount(accountNumber);
             if (!Objects.isNull(userExists)) {
-                final var hmacToAuthenticationKey = HMAC.hMac(keys[1], accountNumber);
-                authenticationKey = RSA.sign(
-                        hmacToAuthenticationKey,
-                        SDCStub.getRSAKeys().privateKey(),
-                        SDCStub.getRSAKeys().modulus());
+                authenticationKey = HMAC.hMac(keys[1], accountNumber);
                 output.writeUTF(authenticationKey);
                 output.writeInt(response);
                 output.flush();
