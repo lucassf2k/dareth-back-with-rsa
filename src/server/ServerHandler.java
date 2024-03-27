@@ -98,7 +98,11 @@ public class ServerHandler implements Runnable {
 
     private void authentication(final Message request) {
         System.out.println("autenticando...");
-        final var isAuthenticated = checkMessageAuthenticity(request.getContent(), request.getHMAC());
+        final var isAuthenticated = checkMessageAuthenticity(
+                request.getContent(),
+                request.getHMAC(),
+                request.getClientPublicKey(),
+                request.getClientModulus());
         System.out.println(isAuthenticated);
         System.out.println("descriptando mensagem...");
         final var vernamMessageDecrypted = decrypt(request);
@@ -135,7 +139,11 @@ public class ServerHandler implements Runnable {
         System.out.println("descriptografando a mensagem...");
         try {
             final var authenticationKeyClient = request.getAuthenticationKey();
-            final var isAuthenticated = checkMessageAuthenticity(request.getContent(), request.getHMAC());
+            final var isAuthenticated = checkMessageAuthenticity(
+                    request.getContent(),
+                    request.getHMAC(),
+                    request.getClientPublicKey(),
+                    request.getClientModulus());
             if (!isAuthenticated) {
                 response = 1;
                 output.writeUTF("credencias incorretas");
@@ -172,7 +180,11 @@ public class ServerHandler implements Runnable {
 
     private void deposit(final Message request) {
         System.out.println("verificando se é uma mensagem autentica...");
-        final var isAuthenticated = checkMessageAuthenticity(request.getContent(), request.getHMAC());
+        final var isAuthenticated = checkMessageAuthenticity(
+                request.getContent(),
+                request.getHMAC(),
+                request.getClientPublicKey(),
+                request.getClientModulus());
         System.out.println("mensagem eutêntica.");
         if (!isAuthenticated) {
             response = 1;
@@ -189,7 +201,11 @@ public class ServerHandler implements Runnable {
 
     private void transfer(final Message request) {
         System.out.println("verificando se é uma mensagem autêntica...");
-        final var isAutehnticated = checkMessageAuthenticity(request.getContent(), request.getHMAC());
+        final var isAutehnticated = checkMessageAuthenticity(
+                request.getContent(),
+                request.getHMAC(),
+                request.getClientPublicKey(),
+                request.getClientModulus());
         if (!isAutehnticated) {
             response = 1;
         }
@@ -212,7 +228,11 @@ public class ServerHandler implements Runnable {
     private void investment(final Message request) {
         System.out.println("verificando se é uma mensagem autenticada");
         final var authenticationKeyClient = request.getAuthenticationKey();
-        final var isAuthenticated = checkMessageAuthenticity(request.getContent(), request.getHMAC());
+        final var isAuthenticated = checkMessageAuthenticity(
+                request.getContent(),
+                request.getHMAC(),
+                request.getClientPublicKey(),
+                request.getClientModulus());
         try {
             if (!isAuthenticated) {
                 response = 1;
@@ -295,15 +315,18 @@ public class ServerHandler implements Runnable {
         return output;
     }
 
-    private boolean checkMessageAuthenticity(final String encryptedMessage, final String HMACMessage) {
+    private boolean checkMessageAuthenticity(
+            final String encryptedMessage,
+            final String HMACMessage,
+            final BigInteger clientPublicKey,
+            final BigInteger clientModulus
+    ) {
         try {
             final var keys = getKeys();
-            final var hmacMessage = RSA.checkSignature(
-                    HMACMessage,
-                    new BigInteger(keys[3]),
-                    new BigInteger(keys[4]));
-            System.out.println(new BigInteger(keys[3]));
-            System.out.println(keys[4]);
+            final var hmacMessage = RSA
+                    .checkSignature(HMACMessage, clientPublicKey, clientModulus);
+            System.out.println(clientPublicKey);
+            System.out.println(clientModulus);
             System.out.println(HMACMessage);
             System.out.println("VERI: " + hmacMessage);
             final var HMACCompare = HMAC.hMac(keys[1], encryptedMessage);

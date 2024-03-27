@@ -35,9 +35,9 @@ public class ClientHandler implements Runnable {
     private String authenticationKey;
     private final Scanner scan = new Scanner(System.in);
     public static int PORT;
-    private static SDCService.RSAKeys clientRsaKeys;
-    public static BigInteger clientPublicKey;
-    public static BigInteger clientMudulus;
+    private SDCService.RSAKeys clientRsaKeys;
+    public BigInteger clientPublicKey;
+    public BigInteger clientMudulus;
     private BigInteger clientPrivateKey;
     private final Protocol SDCStub;
 
@@ -47,6 +47,7 @@ public class ClientHandler implements Runnable {
             final var registrySDC = LocateRegistry.getRegistry(SDCService.PORT);
             SDCStub = (Protocol) registrySDC.lookup("sdc");
             clientRsaKeys = SDCStub.getRSAKeys();
+            clientPrivateKey = clientRsaKeys.privateKey();
             clientPublicKey = clientRsaKeys.publicKey();
             clientMudulus = clientRsaKeys.modulus();
         } catch (RemoteException | NotBoundException e) {
@@ -117,7 +118,6 @@ public class ClientHandler implements Runnable {
             final var keyAESString = Base64.getEncoder().encodeToString(Keys.generateAESKey().getEncoded());
             FileService.insert(keyAESString, filename);
             final var rsaKeys = SDCStub.getRSAKeys();
-            clientPrivateKey = rsaKeys.privateKey();
             FileService.insert(rsaKeys.publicKey().toString(), filename);
             FileService.insert(rsaKeys.modulus().toString(), filename);
         } catch (RemoteException e) {
@@ -139,11 +139,19 @@ public class ClientHandler implements Runnable {
             final var RSASignature = RSA.sign(
                     HMACMessage,
                     clientPrivateKey,
-                    new BigInteger(keys[4]));
-            final var request = new Message(MessageTypes.LOGIN, secureMessage, RSASignature, authenticationKey);
+                    clientMudulus);
+            final var request = new Message(
+                    MessageTypes.LOGIN,
+                    secureMessage,
+                    RSASignature,
+                    authenticationKey,
+                    clientPublicKey,
+                    clientMudulus
+            );
             sendMessage(request);
             cleanTerminal();
             authenticationKey = input.readUTF();
+            authenticationKey = "";
             hasRequest = input.readInt();
         } catch (IOException | InvalidKeyException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
@@ -207,8 +215,15 @@ public class ClientHandler implements Runnable {
             final var RSASignature = RSA.sign(
                     HMACMessage,
                     clientPrivateKey,
-                    new BigInteger(keys[4]));
-            final var request = new Message(MessageTypes.LOGIN, secureMessage, RSASignature, authenticationKey);
+                    clientMudulus);
+            final var request = new Message(
+                    MessageTypes.WITHDRAW,
+                    secureMessage,
+                    RSASignature,
+                    authenticationKey,
+                    clientPublicKey,
+                    clientMudulus
+            );
             sendMessage(request);
             hasRequest = input.readInt();
             cleanTerminal();
@@ -218,7 +233,13 @@ public class ClientHandler implements Runnable {
     }
 
     private void getBalance() {
-        final var request = new Message(MessageTypes.GET_BALANCE, null, null, authenticationKey);
+        final var request = new Message(
+                MessageTypes.GET_BALANCE,
+                null,
+                null, authenticationKey,
+                clientPublicKey,
+                clientMudulus
+        );
         sendMessage(request);
         try {
             cleanTerminal();
@@ -239,8 +260,15 @@ public class ClientHandler implements Runnable {
             final var RSASignature = RSA.sign(
                     HMACMessage,
                     clientPrivateKey,
-                    new BigInteger(keys[4]));
-            final var request = new Message(MessageTypes.LOGIN, secureMessage, RSASignature, authenticationKey);
+                    clientMudulus);
+            final var request = new Message(
+                    MessageTypes.DEPOSIT,
+                    secureMessage,
+                    RSASignature,
+                    authenticationKey,
+                    clientPublicKey,
+                    clientMudulus
+            );
             sendMessage(request);
             cleanTerminal();
             hasRequest = input.readInt();
@@ -262,8 +290,15 @@ public class ClientHandler implements Runnable {
             final var RSASignature = RSA.sign(
                     HMACMessage,
                     clientPrivateKey,
-                    new BigInteger(keys[4]));
-            final var request = new Message(MessageTypes.LOGIN, secureMessage, RSASignature, authenticationKey);
+                   clientMudulus);
+            final var request = new Message(
+                    MessageTypes.TRANSFER,
+                    secureMessage,
+                    RSASignature,
+                    authenticationKey,
+                    clientPublicKey,
+                    clientMudulus
+            );
             sendMessage(request);
             cleanTerminal();
             System.out.println(input.readUTF());
@@ -285,8 +320,15 @@ public class ClientHandler implements Runnable {
             final var RSASignature = RSA.sign(
                     HMACMessage,
                     clientPrivateKey,
-                    new BigInteger(keys[4]));
-            final var request = new Message(MessageTypes.LOGIN, secureMessage, RSASignature, authenticationKey);
+                    clientMudulus);
+            final var request = new Message(
+                    MessageTypes.INVESTMENT,
+                    secureMessage,
+                    RSASignature,
+                    authenticationKey,
+                    clientPublicKey,
+                    clientMudulus
+            );
             sendMessage(request);
             cleanTerminal();
             if (option == 1 || option == 2) {

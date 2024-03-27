@@ -24,9 +24,9 @@ public class RSA {
     ) {
         StringBuilder encrypted_message = new StringBuilder();
         for (char ch : message.toCharArray()) {
-            BigInteger m = new BigInteger(Integer.toString(ch));
-            BigInteger c = m.modPow(privateKey, modulus);
-            encrypted_message.append(c).append(" ");
+            final var chToBigInteger = new BigInteger(Integer.toString(ch));
+            final var chToBigIntegerSigned = chToBigInteger.modPow(privateKey, modulus);
+            encrypted_message.append(chToBigIntegerSigned).append(" ");
         }
         return encrypted_message.toString();
 //        final var originalMessage = new BigInteger(message);
@@ -41,10 +41,10 @@ public class RSA {
         StringBuilder decryptedMessage = new StringBuilder();
         String[] chars = encryptedMessage.split(" ");
         for (final var ch : chars) {
-            BigInteger c = new BigInteger(ch);
-            BigInteger m = c.modPow(publicKey, modulus);
-            final var v = (char)(m.intValue());
-            decryptedMessage.append(v);
+            BigInteger chToBigInteger = new BigInteger(ch);
+            BigInteger chToBigIntegerSigned = chToBigInteger.modPow(publicKey, modulus);
+            final var convertedToChar = (char)(chToBigIntegerSigned.intValue());
+            decryptedMessage.append(convertedToChar);
         }
         return decryptedMessage.toString();
 //        final var message = new BigInteger(encryptedMessage.getBytes());
